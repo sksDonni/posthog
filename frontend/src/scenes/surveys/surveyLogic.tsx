@@ -124,6 +124,7 @@ export const surveyLogic = kea<surveyLogicType>([
         setSelectedQuestion: (idx: number | null) => ({ idx }),
         setSelectedSection: (section: SurveyEditSection | null) => ({ section }),
         resetTargeting: true,
+
     }),
     loaders(({ props, actions, values }) => ({
         survey: {
@@ -232,7 +233,7 @@ export const surveyLogic = kea<surveyLogicType>([
                             JSONExtractString(properties, '${getResponseField(questionIndex)}') AS survey_response,
                             COUNT(survey_response)
                         FROM events
-                        WHERE event = 'survey sent' 
+                        WHERE event = 'survey sent'
                             AND properties.$survey_id = '${props.id}'
                             AND timestamp >= '${startDate}'
                             AND timestamp <= '${endDate}'
@@ -274,7 +275,7 @@ export const surveyLogic = kea<surveyLogicType>([
                             JSONExtractString(properties, '${getResponseField(questionIndex)}') AS survey_response,
                             COUNT(survey_response)
                         FROM events
-                        WHERE event = 'survey sent' 
+                        WHERE event = 'survey sent'
                             AND properties.$survey_id = '${props.id}'
                             AND timestamp >= '${startDate}'
                             AND timestamp <= '${endDate}'
@@ -312,7 +313,7 @@ export const surveyLogic = kea<surveyLogicType>([
                 const query: HogQLQuery = {
                     kind: NodeKind.HogQLQuery,
                     query: `
-                        SELECT 
+                        SELECT
                             count(),
                             arrayJoin(JSONExtractArrayRaw(properties, '${getResponseField(questionIndex)}')) AS choice
                         FROM events
@@ -392,7 +393,7 @@ export const surveyLogic = kea<surveyLogicType>([
             },
         },
     })),
-    listeners(({ actions }) => ({
+    listeners(({ actions, values }) => ({
         createSurveySuccess: ({ survey }) => {
             lemonToast.success(<>Survey {survey.name} created</>)
             actions.loadSurveys()
@@ -423,6 +424,11 @@ export const surveyLogic = kea<surveyLogicType>([
         },
         loadSurveySuccess: () => {
             actions.loadSurveyUserStats()
+        },
+        submitSurveyFailure:() => {
+            if(values.surveyHasErrors){
+                lemonToast.error('Survey Creation error. There was an error creating this Survey. Make sure the survey entries are correct.')
+            }
         },
         resetTargeting: () => {
             actions.setSurveyValue('linked_flag_id', NEW_SURVEY.linked_flag_id)
@@ -664,7 +670,7 @@ export const surveyLogic = kea<surveyLogicType>([
     }),
     forms(({ actions, props, values }) => ({
         survey: {
-            defaults: { ...NEW_SURVEY } as NewSurvey | Survey,
+            defaults: { ...NEW_SURVEY,  } as NewSurvey | Survey,
             errors: ({ name, questions }) => ({
                 name: !name && 'Please enter a name.',
                 questions: questions.map((question) => ({
@@ -682,6 +688,7 @@ export const surveyLogic = kea<surveyLogicType>([
                 // controlled using a PureField in the form
                 urlMatchType: values.urlMatchTypeValidationError,
             }),
+
             submit: async (surveyPayload) => {
                 let surveyPayloadWithTargetingFlagFilters = surveyPayload
                 const flagLogic = featureFlagLogic({ id: values.survey.targeting_flag?.id || 'new' })
@@ -698,6 +705,7 @@ export const surveyLogic = kea<surveyLogicType>([
                     actions.createSurvey(surveyPayloadWithTargetingFlagFilters)
                 }
             },
+            showErrorsOnTouch: true,
         },
     })),
     urlToAction(({ actions, props }) => ({
